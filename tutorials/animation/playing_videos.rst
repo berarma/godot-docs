@@ -10,8 +10,7 @@ Supported playback formats
 
 The only supported format in core is **Ogg Theora** (not to be confused with
 Ogg Vorbis audio) with optional Ogg Vorbis audio tracks. It's possible for
-extensions to bring support for additional formats, but no such extensions
-exist yet as of July 2022.
+extensions to bring support for additional formats.
 
 H.264 and H.265 cannot be supported in core Godot, as they are both encumbered
 by software patents. AV1 is royalty-free, but it remains slow to decode on the
@@ -156,6 +155,8 @@ There are several limitations with the current implementation of video playback 
 - Changing playback speed is not supported. VideoStreamPlayer also won't follow
   :ref:`Engine.time_scale<class_Engine_property_time_scale>`.
 - Streaming a video from a URL is not supported.
+- Audio output is always mono or stereo. Files with 4, 5.1 and 7.1 audio
+  channels are supported but down-mixed to stereo.
 
 .. _doc_playing_videos_recommended_theora_encoding_settings:
 
@@ -197,9 +198,10 @@ below with almost any input video format (AVI, MOV, WebM, …).
 
 .. warning::
 
-   FFmpeg will erroneuosly drop identical frames when performing a copy of a
+   FFmpeg will erroneously drop identical frames when performing a copy of a
    Theora stream producing an incorrect video file. Avoid it by always
-   transcoding video.
+   transcoding video. See `FFmpeg issue #11451
+   <https://trac.ffmpeg.org/ticket/11451>`__.
 
 Balancing quality and file size
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -223,18 +225,25 @@ dropouts in case of high system load. See
 for a table listing Ogg Vorbis audio quality presets and their respective
 variable bitrates.
 
-The **GOP size** (``-g:v``) can provide further compression by increasing the
-interval between keyframes. The default value is pretty low (12). Higher values
-can provide better compression at the expense of some quality and slightly
-slower seeks. Increasing GOP size usually produces better results than reducing
-video quality and it's thus recommended.
+The **GOP (Group of Pictures) size** (``-g:v``) can provide better compression
+by increasing the max interval between keyframes. The default value (``12``) is
+pretty low. Higher values can provide better compression with almost no impact
+on quality and only slightly slower seeks. Increasing it produces better
+results than reducing video quality and it's thus recommended. As the value
+increases, compression benefits decrease until there's no practical improvement
+anymore.
 
 .. note::
 
-   GOP sizes above 64 will cause seeks to be slower, more noticeably beyond
-   every power of two. Also, due to some supposed bug in FFmpeg, using a GOP
-   size greater than 64 can slow down seeking even more and might create bigger
-   files.
+   GOP size values going past powers of two counting from ``64`` will increase
+   seek times slightly more. Thus, recommended values to try if you want best
+   compression/seek times ratios are ``64``, ``128``, ``256``…
+
+.. warning::
+
+   When encoding with FFmpeg, using a GOP size greater than ``64`` can slow
+   down seeking even more and might not always improve compression. See `FFmpeg
+   issue #11454 <https://trac.ffmpeg.org/ticket/11454>`__.
 
 FFmpeg: Convert while preserving original video resolution
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -246,7 +255,7 @@ static scenes).
 
 ::
 
-    ffmpeg -i input.mp4 -q:v 6 -g:v 30 -q:a 6 output.ogv
+    ffmpeg -i input.mp4 -q:v 6 -g:v 64 -q:a 6 output.ogv
 
 FFmpeg: Resize the video then convert it
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -257,7 +266,7 @@ significantly if the source is recorded at a higher resolution than 720p:
 
 ::
 
-    ffmpeg -i input.mp4 -vf "scale=-1:720" -q:v 6 -g:v 30 -q:a 6 output.ogv
+    ffmpeg -i input.mp4 -vf "scale=-1:720" -q:v 6 -g:v 64 -q:a 6 output.ogv
 
 
 .. Chroma Key Functionality Documentation
