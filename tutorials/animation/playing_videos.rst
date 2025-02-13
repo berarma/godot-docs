@@ -155,7 +155,7 @@ There are several limitations with the current implementation of video playback 
 - Changing playback speed is not supported. VideoStreamPlayer also won't follow
   :ref:`Engine.time_scale<class_Engine_property_time_scale>`.
 - Streaming a video from a URL is not supported.
-- Audio output is always mono or stereo. Files with 4, 5.1 and 7.1 audio
+- Audio output is always mono or stereo. Videos with 4, 5.1 and 7.1 audio
   channels are supported but down-mixed to stereo.
 
 .. _doc_playing_videos_recommended_theora_encoding_settings:
@@ -198,9 +198,11 @@ below with almost any input video format (AVI, MOV, WebM, …).
 
 .. warning::
 
-   FFmpeg will erroneously drop identical frames when performing a copy of a
-   Theora stream producing an incorrect video file. Avoid it by always
-   transcoding video. See `FFmpeg issue #11451
+   FFmpeg 5.1.6 will erroneously drop identical frames when performing a copy
+   of a Theora stream, altering the video content. It can be avoided by always
+   transcoding video. Newer versions have the same issue also when encoding.
+   For now, you'll get better results encoding video with FFmpeg 5.1.6, and not
+   doing video stream copies. See `FFmpeg issue #11451
    <https://trac.ffmpeg.org/ticket/11451>`__.
 
 Balancing quality and file size
@@ -225,25 +227,25 @@ dropouts in case of high system load. See
 for a table listing Ogg Vorbis audio quality presets and their respective
 variable bitrates.
 
-The **GOP (Group of Pictures) size** (``-g:v``) can provide better compression
-by increasing the max interval between keyframes. The default value (``12``) is
-pretty low. Higher values can provide better compression with almost no impact
-on quality and only slightly slower seeks. Increasing it produces better
-results than reducing video quality and it's thus recommended. As the value
-increases, compression benefits decrease until there's no practical improvement
-anymore.
+The **GOP (Group of Pictures) size** (``-g:v``) is the max interval between
+keyframes. Increasing this value will improve compression with almost no impact
+on quality, but seeks will be slower depending on decoding speed. The valid
+range goes from ``0`` to ``2,147,483,648``, although compression benefits will
+fade away as the value increases, making large sizes useless. The default GOP
+size is pretty low, thus it's recommended to increase it to improve compression
+before reducing video quality.
 
 .. note::
 
-   GOP size values going past powers of two counting from ``64`` will increase
-   seek times slightly more. Thus, recommended values to try if you want best
-   compression/seek times ratios are ``64``, ``128``, ``256``…
+   GOP size values going past powers of two, counting from ``64``, will
+   increase seek times slightly more. Thus, recommended values to try if you
+   want best compression/seek times ratios are ``64``, ``128``, ``256``…
 
 .. warning::
 
    When encoding with FFmpeg, using a GOP size greater than ``64`` can slow
-   down seeking even more and might not always improve compression. See `FFmpeg
-   issue #11454 <https://trac.ffmpeg.org/ticket/11454>`__.
+   down seeking a bit more than it should. See `FFmpeg issue #11454
+   <https://trac.ffmpeg.org/ticket/11454>`__.
 
 FFmpeg: Convert while preserving original video resolution
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
